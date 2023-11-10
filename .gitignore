@@ -1,0 +1,9 @@
+# ds_store
+**/.DS_Store
+
+# notebooks checkpoints
+**/.ipynb_checkpoints/
+
+# data
+data
+
