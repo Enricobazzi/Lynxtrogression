@@ -10,3 +10,12 @@ data
 # plots/variant_filtering/rd_filters
 plots/variant_filtering/rd_filters
 
+# R generated files
+.Rproj.user
+.Rhistory
+.RData
+.Rproj
+Lynxtrogression.Rproj
+
+actividad.ipynb
+.ipynb_checkpoints
