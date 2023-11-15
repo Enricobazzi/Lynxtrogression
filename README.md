@@ -259,3 +259,213 @@ I calculated the number of missing genotypes in each population for each SNP in 
 </p>
 
 The final decision, based on these results, is to filter out any SNP with **15%** or more missing data, which results in a loss of ~5.4% of SNPs in Lynx pardinus, ~1.5% in Western and Eastern Eurasian lynx and <1% in the Southern Eurasian lynx. Higher missing rate in Lynx pardinus is probably given by the combination of the older sequencing technologies used for some of the samples and the relatively low depth of the rest of the samples.
+
+#### Calculating filter based on Read Depth
+
+Mean read depth in consecutive 10kbp windows along the genome was calculated using the software [samtools](http://www.htslib.org/doc/samtools.html) ([Li et al. 2009](https://academic.oup.com/bioinformatics/article/25/16/2078/204688)) in the custom script [pop_depth_10kwin.sh](scripts/variant_filtering/pop_depth_10kwin.sh).
+
+```
+pop_list=($(cat /mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/LyCaRef_vcfs/lp_ll_introgression/lp_ll_introgression_populations.txt | cut -f2 | sort -u))
+for pop in ${pop_list[@]}
+ do
+  sbatch -t 02-00:00 -n 1 -c 1 --mem=90GB pop_depth_10kwin.sh ${pop}
+done
+```
+
+The script outputs a bed file for each chromosome of each population, reporting the mean read depth for each 10kbp window. These bed files can be analysed using an R script [filter_rd.R](scripts/variant_filtering/filter_rd.R), that calculates and plots the distribution of mean read depth values for all windows. Based on these distributions, the same [filter_rd.R](scripts/variant_filtering/filter_rd.R) script will also calculate a maximum depth value and output a bed file for each population with the windows to be excluded based on this maximum depth.
+
+The maximum depth is calculated as the overall mean read depth + 0.5 times the standard deviation of mean read depth values. This ends up excluding ~1100 windows in each population, which correspond to around 0.5% of all windows.
+
+#### Applying the filters
+
+Before we can divide the phased VCF into the three desired population-pair VCFs, we need to quickly adapt the phased VCF's header, that saw most of the important information stripped away during phasing (will give problems in GATK if we skip this). To "fix" the header we simply copy the pre-phased header, add the few new fields added during phasing, and finally add the phased part of the table:
+
+```
+# take pre-phased header
+grep "##" lp_ll_introgression_LyCa_ref.sorted.filter5.vcf \
+ > lp_ll_introgression_LyCa_ref.sorted.filter5.phased.fixed.vcf
+
+# add info and format added in phasing
+grep -E "##INFO|##FORMAT" lp_ll_introgression_LyCa_ref.sorted.filter5.phased.vcf \
+ >> lp_ll_introgression_LyCa_ref.sorted.filter5.phased.fixed.vcf
+
+# add phased vcf table
+grep -v "##" lp_ll_introgression_LyCa_ref.sorted.filter5.phased.vcf \
+ >> lp_ll_introgression_LyCa_ref.sorted.filter5.phased.fixed.vcf
+```
+
+After this we can use a custom script [split_miss_rd_filter.sh](scripts/variant_filtering/split_miss_rd_filter.sh) to split the VCF into the three population-pair VCFs and apply the specific missing data and read depth filters.
+
+### Preparing the dataset for Demographic Inference
+
+#### Identify Genomic Windows
+
+In order to run demographic inference using Oscar Lao's GP4PG approach I need to generate the list of genomic windows on which the analyses will be run. This is done through the MaskData.java script in the Lynx_EA_ABC package. This requires three distinct types of windows:
+
+1. genes
+2. repeats
+3. callable windows
+
+The list of genomic coordinates for gene and their surroundings (5kbp down- and up-stream) was generated from the GFF3 of the reference genome:
+
+```
+# generate list of genes with 5kbp up- and down-stream
+awk -F"\t" '$3 == "gene" {printf ("%s\t%s\t%s\t%s\n", $1, $4-5001, $5+5000, $9)}' lc4.NCBI.nr_main.gff3 | awk -F'\t' '{split($4, a, ";"); for(i in a) if(index(a[i], "Name=") == 1) {gsub("Name=", "", a[i]); print $1 "\t" ($2 < 0 ? 0 : $2) "\t" $3 "\t" a[i]}}' > lc4.NCBI.nr_main.all_genes.plus5000.bed
+```
+
+A header is then added to this file and saved as the [Canada_Lynx_Genes.txt](data/demographic_inference/genomic_regions/Canada_Lynx_Genes.txt).
+
+The repeats were marked during the assembly and are contained in a bed file called `lc_rep_ALL_scaffold_coord.bed`.
+
+Callable windows is the collection of the 18 autosomic and large scaffolds from which we subtract the 10kbp windows that were discarded because of their read depth:
+
+```
+# for each Eurasian lynx population:
+for pop in wel eel sel
+ do
+  echo "generating callable regions of population pair: lpa-${pop}"
+  
+  # from the 18 autosomic and large scaffolds
+  grep -v "Super_Scaffold_10" /GRUPOS/grupolince/reference_genomes/lynx_canadensis/big_scaffolds.bed |
+    # remove high read depth in lpa
+    bedtools subtract \
+      -a stdin \
+      -b /GRUPOS/grupolince/LyCaRef_vcfs/lp_ll_introgression/filter_beds/lpa_rd_filter.bed |
+    # remove high read depth in eurasian
+    bedtools subtract \
+      -a stdin \
+      -b /GRUPOS/grupolince/LyCaRef_vcfs/lp_ll_introgression/filter_beds/${pop}_rd_filter.bed \
+  > /GRUPOS/grupolince/LyCaRef_vcfs/lp_ll_introgression/demographic_inference/lpa-${pop}_GP4PG_callable_windows.bed
+
+done
+```
+
+The MaskData.java script will extract genomic windows from the callable fragments that have the following characteristics:
+- have a size of 20kbp
+- have a distance between eachother of at least 500kbp
+- contain a minimum density of non-gene non-repeat sequence of 0.5
+
+The MaskData.java script will generate the list of windows and subwindows that will be used for Demographic Inference (masked_regions). A manual modification has to be done to the file in order to remove the [ ] brackets enclosing the subwindows.
+
+The number of masked_regions for Demographic Inference for each population pair is:
+- lpa-wel : 2057
+- lpa-eel : 2057
+- lpa-sel : 2057
+
+In theory these windows could be different for each population pair analyzed so I've run it for each. In the end I see that the masked_regions end up being exactly the same so using either file will be good.
+
+As the analysis needs the file to be named `masked_regions.txt`, I copy the one of the population pair I'm about to analyze to this file name *i.e.*: `cp lpa-wel.masked_regions.txt masked_regions.txt`
+
+#### Create Plink File for Genotypes
+
+To run the GP4PG model I need to have the genotypes in [PLINK](https://www.sciencedirect.com/science/article/pii/S0002929707613524?via%3Dihub)'s BED, BIM and FAM format:
+
+```
+# for each Eurasian lynx population:
+for pop in wel eel sel
+ do
+  echo "generating plink files of population pair: lpa-${pop}"
+  vcf=/GRUPOS/grupolince/LyCaRef_vcfs/lp_ll_introgression_LyCa_ref.sorted.filter5.phased.fixed.lpa-${pop}.miss.rd_fil.vcf
+  plink_1.9 --vcf $vcf \
+    --double-id --allow-extra-chr --set-missing-var-ids @:# \
+    --make-bed \
+    --out data/demographic_inference/lpa-${pop}.callable_genotypes
+done
+```
+
+#### Final QC and sanity checks
+
+I want to check if the selected masked_regions are a good representation of expected genetic variation among my samples.
+
+To extract only the SNPs from the masked_regions, I can give PLINK's option `--extract` a [set-range](https://www.cog-genomics.org/plink/1.9/input#make_set) file. To extract set-range files from the masked_range.txt files I made a python script [make_plink_range_from_masked_regions.py] (src/demographic_inference/make_plink_range_from_masked_regions.py)
+
+*Note: this will have the scaffold names coded as in the Canada lynx reference genome, and not as in the masked_regions.txt file*
+
+```
+python src/demographic_inference/make_plink_range_from_masked_regions.py --masked_regions_file data/demographic_inference/genomic_regions/lpa-wel.masked_regions.txt
+python src/demographic_inference/make_plink_range_from_masked_regions.py --masked_regions_file data/demographic_inference/genomic_regions/lpa-sel.masked_regions.txt
+python src/demographic_inference/make_plink_range_from_masked_regions.py --masked_regions_file data/demographic_inference/genomic_regions/lpa-eel.masked_regions.txt
+```
+
+I can extract SNPs for these windows only in PLINK's RAW format for easier manipulation:
+
+```
+for pop in wel eel sel
+ do
+  echo "generating plink files of population pair: lpa-${pop}"
+  plink_1.9 --bfile data/demographic_inference/lpa-${pop}.callable_genotypes \
+    --double-id --allow-extra-chr --set-missing-var-ids @:# \
+    --extract range data/demographic_inference/genomic_regions/lpa-${pop}.masked_regions.plink_range \
+    --recode A \
+    --out data/demographic_inference/lpa-${pop}.masked_regions_only
+done
+```
+
+I do some sanity checks
+
+- **Number of SNPs per Sequence length - masked_regions vs callable**
+
+```
+# callable regions total length = 654'017'849
+awk '{sum += $3 - $2} END {print sum}' data/demographic_inference/genomic_regions/lpa-wel_GP4PG_callable_windows.nogenes_noreps.bed
+
+# number of SNPs in callable regions = 2'940'638
+subtractBed \
+  -a data/vcfs/lp_ll_introgression_LyCa_ref.sorted.filter5.phased.fixed.lpa-wel.miss.rd_fil.vcf \
+  -b data/demographic_inference/genomic_regions/lc4.NCBI.nr_main.all_genes.plus5000.bed | 
+ grep -v "Super_Scaffold_10" | wc -l
+
+# callable regions SNP density = 2'940'638 / 654'017'849 = 0.004496265666902311
+
+# masked_regions total length = 24'220'273
+awk '{sum += $3 - $2} END {print sum}' data/demographic_inference/genomic_regions/lpa-wel.masked_regions.plink_range
+
+# number of SNPs in masked_regions = 103'439
+head -1 data/demographic_inference/lpa-wel.masked_regions_only.raw |
+ tr ' ' '\n' | grep -vwE "FID|IID|PAT|MAT|SEX|PHENOTYPE" | wc -l
+
+# masked_regions SNP density = 103'439 / 24'220'273 = 0.0042707611099181255
+```
+
+- **Population Structure in masked_regions**
+
+```
+Rscript src/demographic_inference/lpa-wel.pop_structure_sanity.R
+Rscript src/demographic_inference/lpa-eel.pop_structure_sanity.R
+Rscript src/demographic_inference/lpa-sel.pop_structure_sanity.R
+```
+
+- **Inspecting the SFS**
+
+[1852.0, 4066.0, 1188.0, 95.0, 203.0, 4247.0, 289.0]
+
+- **Samples for Inference**
+
+### Preparing GP4PG for Demographic Inference
+
+- **Build the Models**
+
+In the Lynx_EA_ABC package I prepared a demographic model that will be the backbone on which the Invasive Weed Evolutionary Algorithm will build upon. It has the following characteristics:
+
+*Describe models and priors*
+
+The models are saved in the Lynx_ModelXXX.java files inside the lynx_ea_abc source package.
+
+- **Hyperparameters of EA run**
+
+The package's main class (file that will be executed when running the application) is the Test_RunnerEA.java file inside the lynx_ea_abc source package. 
+
+Here the following things are defined:
+
+*Describe Test_RunnerEA.java and choices made with hyperparameters*
+
+*If needed the main class can be changed in NetBeans by rightclicking the project folder - Properties - Run - Browse to java file to use as main*
+
+- **Configuration Files**
+
+In order to create the scripts that will run the GP4PG model and in order to run the model itself I need to create a configuration file with the following information:
+
+*Describe config file*
+
+### Running GP4PG
+
