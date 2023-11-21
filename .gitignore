@@ -19,3 +19,12 @@ Lynxtrogression.Rproj
 
 actividad.ipynb
 .ipynb_checkpoints
+
+scripts/demographic_inference/sbatch_run_model_LPLL_IM
+scripts/demographic_inference/sbatch_run_model_LPLL_SI
+scripts/demographic_inference/sbatch_run_model_LPLL_IM_SI
+
+working/demographic_inference/run_**
+working/demographic_inference/logs
+
+src/demographic_inference/Lynx_EA_ABC
