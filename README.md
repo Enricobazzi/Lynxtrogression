@@ -358,28 +358,16 @@ As the analysis needs the file to be named `masked_regions.txt`, I copy the one 
 
 #### Create Plink File for Genotypes
 
-To run the GP4PG model I need to have the genotypes in [PLINK](https://www.sciencedirect.com/science/article/pii/S0002929707613524?via%3Dihub)'s BED, BIM and FAM format:
+To run the GP4PG model I need to have the genotypes in [PLINK](https://www.sciencedirect.com/science/article/pii/S0002929707613524?via%3Dihub)'s BED, BIM and FAM format.
 
-```
-# for each Eurasian lynx population:
-for pop in wel eel sel
- do
-  echo "generating plink files of population pair: lpa-${pop}"
-  vcf=/GRUPOS/grupolince/LyCaRef_vcfs/lp_ll_introgression_LyCa_ref.sorted.filter5.phased.fixed.lpa-${pop}.miss.rd_fil.vcf
-  plink_1.9 --vcf $vcf \
-    --double-id --allow-extra-chr --set-missing-var-ids @:# \
-    --make-bed \
-    --out data/demographic_inference/lpa-${pop}.callable_genotypes
-done
-```
+To generate them in a way that will have the information useful for GP4PG (*i.e.* an ancestral individual and translated chromosome names) I use a custom java script called CreatePlink.java, located in the Lynx_EA_ABC package, in the source package create_data.
+
 
 #### Final QC and sanity checks
 
 I want to check if the selected masked_regions are a good representation of expected genetic variation among my samples.
 
 To extract only the SNPs from the masked_regions, I can give PLINK's option `--extract` a [set-range](https://www.cog-genomics.org/plink/1.9/input#make_set) file. To extract set-range files from the masked_range.txt files I made a python script [make_plink_range_from_masked_regions.py] (src/demographic_inference/make_plink_range_from_masked_regions.py)
-
-*Note: this will have the scaffold names coded as in the Canada lynx reference genome, and not as in the masked_regions.txt file*
 
 ```
 python src/demographic_inference/make_plink_range_from_masked_regions.py --masked_regions_file data/demographic_inference/genomic_regions/lpa-wel.masked_regions.txt
@@ -429,6 +417,8 @@ head -1 data/demographic_inference/lpa-wel.masked_regions_only.raw |
 
 - **Population Structure in masked_regions**
 
+I can look at population structure at loci we're using for the analysis, in order to detect any weird patterns in the way samples are related to eachother.
+
 ```
 Rscript src/demographic_inference/lpa-wel.pop_structure_sanity.R
 Rscript src/demographic_inference/lpa-eel.pop_structure_sanity.R
@@ -437,7 +427,10 @@ Rscript src/demographic_inference/lpa-sel.pop_structure_sanity.R
 
 - **Inspecting the SFS**
 
-[1852.0, 4066.0, 1188.0, 95.0, 203.0, 4247.0, 289.0]
+[[0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1]]
+[3960.0, 8085.0, 3809.0, 175.0, 300.0, 9761.0, 711.0]
+[4001.0, 8075.0, 3782.0, 168.0, 330.0, 9744.0, 699.0]
+[4085.0, 8185.0, 3855.0, 210.0, 349.0, 9564.0, 839.0]
 
 - **Samples for Inference**
 
@@ -449,7 +442,7 @@ In the Lynx_EA_ABC package I prepared a demographic model that will be the backb
 
 *Describe models and priors*
 
-The models are saved in the Lynx_ModelXXX.java files inside the lynx_ea_abc source package.
+The models are saved in the Lynx_Model_LPLL_IM.java and Lynx_Model_LPLL_SI.java files inside the lynx_ea_abc source package.
 
 - **Hyperparameters of EA run**
 
@@ -469,3 +462,28 @@ In order to create the scripts that will run the GP4PG model and in order to run
 
 ### Running GP4PG
 
+*Describe make_sbatch script*
+
+```
+for n in {0..50}
+ do
+  python src/demographic_inference/make_sbatch_model_run_scripts.py $n config/demographic_inference/model_LPLL_SI.config.properties scripts/demographic_inference/sbatch_run_model_LPLL_SI
+  python src/demographic_inference/make_sbatch_model_run_scripts.py $n config/demographic_inference/model_LPLL_IM.config.properties scripts/demographic_inference/sbatch_run_model_LPLL_IM
+done
+
+for n in {0..50}
+ do
+  python src/demographic_inference/make_sbatch_model_run_scripts.py $n config/demographic_inference/model_LPLL_IM_SI.config.properties scripts/demographic_inference/sbatch_run_model_LPLL_IM_SI
+done
+
+```
+
+*Describe run folder setup*
+
+```
+for sh in $(ls scripts/demographic_inference/sbatch_run_model_LPLL_IM_SI/*.sh)
+ do
+  echo $sh
+  sbatch $sh
+done
+```

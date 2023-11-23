@@ -16,27 +16,6 @@ chr1 3900 3950 3000-4000
 
 import argparse
 
-# chromosome dictionary
-chr_to_scafold_conversion = {}
-chr_to_scafold_conversion["1"] = "Super_Scaffold_1"
-chr_to_scafold_conversion["2"] = "Super_Scaffold_11"
-chr_to_scafold_conversion["3"] = "Super_Scaffold_12"
-chr_to_scafold_conversion["4"] = "Super_Scaffold_13"
-chr_to_scafold_conversion["5"] = "Super_Scaffold_14"
-chr_to_scafold_conversion["6"] = "Super_Scaffold_2"
-chr_to_scafold_conversion["7"] = "Super_Scaffold_3"
-chr_to_scafold_conversion["8"] = "Super_Scaffold_4"
-chr_to_scafold_conversion["9"] = "Super_Scaffold_5"
-chr_to_scafold_conversion["10"] = "Super_Scaffold_6"
-chr_to_scafold_conversion["11"] = "Super_Scaffold_7"
-chr_to_scafold_conversion["12"] = "Super_Scaffold_8"
-chr_to_scafold_conversion["13"] = "Super_Scaffold_9"
-chr_to_scafold_conversion["14"] = "scaffold_11_arrow_ctg1"
-chr_to_scafold_conversion["15"] = "scaffold_17_arrow_ctg1"
-chr_to_scafold_conversion["16"] = "scaffold_18_arrow_ctg1"
-chr_to_scafold_conversion["17"] = "scaffold_21_arrow_ctg1"
-chr_to_scafold_conversion["18"] = "scaffold_2_arrow_ctg1"
-
 def main():
     # read the arguments
     parser = argparse.ArgumentParser(description="Make plink range file from masked regions file.")
@@ -55,7 +34,7 @@ def main():
     with open(plink_range_file, "w") as f:
         for line in masked_regions:
             line = line.strip().split()
-            chrom = chr_to_scafold_conversion[line[0]]
+            chrom = line[0]
             start = line[1]
             end = line[2]
             for i in range(4, len(line), 2):
