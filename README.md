@@ -419,6 +419,14 @@ head -1 data/demographic_inference/lpa-wel.masked_regions_only.raw |
 
 I can look at population structure at loci we're using for the analysis, in order to detect any weird patterns in the way samples are related to eachother.
 
+For this I wrote three custom R scripts [lpa-wel.pop_structure_sanity.R](src/demographic_inference/lpa-wel.pop_structure_sanity.R), [lpa-eel.pop_structure_sanity.R](src/demographic_inference/lpa-eel.pop_structure_sanity.R) and [lpa-sel.pop_structure_sanity.R](src/demographic_inference/lpa-sel.pop_structure_sanity.R). These will run PCA on the genotypes of the masked_regions, and generate 3 PC1-PC2 plots each:
+
+- one with all the samples
+- one with the lynx pardinus samples
+- one with the lynx lynx samples
+
+This way I can check basic relationships among samples and find any possible weird patterns. The scripts are called as follows:
+
 ```
 Rscript src/demographic_inference/lpa-wel.pop_structure_sanity.R
 Rscript src/demographic_inference/lpa-eel.pop_structure_sanity.R
@@ -427,14 +435,31 @@ Rscript src/demographic_inference/lpa-sel.pop_structure_sanity.R
 
 - **Inspecting the SFS**
 
+*Extract population SFS*
+
 [[0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1]]
 [3960.0, 8085.0, 3809.0, 175.0, 300.0, 9761.0, 711.0]
 [4001.0, 8075.0, 3782.0, 168.0, 330.0, 9744.0, 699.0]
 [4085.0, 8185.0, 3855.0, 210.0, 349.0, 9564.0, 839.0]
 
+### Preparing GP4PG for Demographic Inference
+
+
 - **Samples for Inference**
 
-### Preparing GP4PG for Demographic Inference
+Analyzing the PCA plots, and taking into account the read depth of each sample, I selected the following samples for the specific population pair analyses:
+
+- lpa-wel:
+ - training: c_lp_sm_0138, c_ll_ki_0090
+ - replication: c_lp_sm_0140, c_ll_ur_0202
+
+- lpa-eel:
+ - training: c_lp_sm_0138, ...
+ - replication: c_lp_sm_0140, ...
+
+- lpa-sel:
+ - training: c_lp_sm_0138, ...
+ - replication: c_lp_sm_0140, ...
 
 - **Build the Models**
 
