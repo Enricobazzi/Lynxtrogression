@@ -437,10 +437,22 @@ Rscript src/demographic_inference/lpa-sel.pop_structure_sanity.R
 
 *Extract population SFS*
 
+replicate SFS
 [[0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1]]
 [3960.0, 8085.0, 3809.0, 175.0, 300.0, 9761.0, 711.0]
 [4001.0, 8075.0, 3782.0, 168.0, 330.0, 9744.0, 699.0]
 [4085.0, 8185.0, 3855.0, 210.0, 349.0, 9564.0, 839.0]
+
+few small 0 (model with low Ne for 0)
+[[0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1]]
+[3334.0, 9043.0, 2403.0, 158.0, 327.0, 9215.0, 906.0]
+[4145.0, 8775.0, 3130.0, 38.0, 257.0, 9469.0, 729.0]
+
+many large 0 (model with Ne for 0 = to Ne for 1)
+[[0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1]]
+[4065.0, 9060.0, 3088.0, 77.0, 255.0, 9483.0, 705.0]
+[3863.0, 8616.0, 3174.0, 59.0, 287.0, 9019.0, 750.0]
+[4190.0, 8953.0, 2887.0, 90.0, 245.0, 9792.0, 698.0]
 
 ### Preparing GP4PG for Demographic Inference
 
@@ -463,9 +475,24 @@ Analyzing the PCA plots, and taking into account the read depth of each sample, 
 
 - **Build the Models**
 
-In the Lynx_EA_ABC package I prepared a demographic model that will be the backbone on which the Invasive Weed Evolutionary Algorithm will build upon. It has the following characteristics:
+In the Lynx_EA_ABC package I prepared a demographic model that will be the backbone on which the Invasive Weed Evolutionary Algorithm (EA) will build upon.
 
-*Describe models and priors*
+The models have the following foundation:
+
+- coordinates for the space occupied by the two species:
+   - upper left (-9, 43), lower right (0.22, 37.58) for *Lynx pardinus*
+   - upper left (0.22, 80), lower right (139.38, 27.78) for *Lynx lynx*
+- each species' EcoDeme:
+   - 1 to 5 TopoDemes
+   - 100 to 6000 Ne for each TopoDeme
+   - 10E-6 to 10E-2 among TopoDeme migration rate
+- divergence time among species from 5K to 1M generations ago
+- 10E-6 to 10E-2 among TopoDeme migration rate within the ancestral population
+
+With these prior conditions, I test two distinct models.
+
+The first model is called Island Migration (IM), where a migration rate between 0 and 10E-5 is maintained constantly after divergence among the two species.
+The second model is called Strict Isolation (SI), where migration after divergence is set to 0. Note that pulse migrations are still allowed to be added by the EA when mutating nodes after each generation of the Invasive Weed, so the concept of Strict Isolation only applies to the model prior.
 
 The models are saved in the Lynx_Model_LPLL_IM.java and Lynx_Model_LPLL_SI.java files inside the lynx_ea_abc source package.
 
@@ -473,9 +500,39 @@ The models are saved in the Lynx_Model_LPLL_IM.java and Lynx_Model_LPLL_SI.java 
 
 The package's main class (file that will be executed when running the application) is the Test_RunnerEA.java file inside the lynx_ea_abc source package. 
 
-Here the following things are defined:
+Following the instructions in the main class the program will:
 
-*Describe Test_RunnerEA.java and choices made with hyperparameters*
+- The configuration file (passed to the jar as second argument) is read to define:
+   - working_folder: Within this directory you must have the plink bed file, the masked_regions.txt and a folder with fastSimcoal2
+   - bed_file: Plink Bed file containing Genotypes to be used
+   - fsc_name: Name of the fastSimcoal2 executable
+   - fsc_folder name: Name prefix of folder where fastSimcoal2 will be run
+   - individuals for training: String of comma separated samples names to be used for training (e.g. sample1,sample2)
+   - individuals for replication: String of comma separated samples names to be used for replication (e.g. sample1,sample2)
+   - the model to run: needed only if you want to run a model by itself
+
+- The model to run is either read from the configuration file with `Lynx_Model modev = new Lynx_Model(Integer.parseInt(model_to_run))` or all models listed in the Lynx_Model.java file inside the lynx_ea_abc source package are pooled against eachother with `Lynx_Model modev = new Lynx_Model()`
+
+- A new EA run is initiated with the information from the configuration file and an index (passed to the jar as first argument)
+
+- Recombination and mutation rates are defined as `RandomTruncatedNormal(9.4 * Math.pow(10, -9), 1 * Math.pow(10, -11), Math.pow(10, -11), Math.pow(10, -7))` and `RandomTruncatedNormal(6 * Math.pow(10, -9), 6 * Math.pow(10, -10), 6 * Math.pow(10, -11), 6 * Math.pow(10, -7))` respectively (truncated normal distributions around values identified in [Abascal et al. 2016](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-1090-1))
+
+- Define the following Demographic Events that can be added to the model by the EA as mutations with the defined probability (1 for all):
+   - Change_Migration_In_Backward: time = from 20 to 1M generations ago; value = from 10E-9 to 10E-2
+   - Change_Ne_In_Backward: time = from 20 to 1M generations ago; value = 100 to 6000
+   - Extinct_Demes_In_Forward: time = from 20 to 1M generations ago; value = 1
+   - Incease_Demes_In_Forward: time = from 20 to 1M generations ago; value = 1
+   - Admixture: time = from 20 to 1M generations ago; value = from 0.0001 to 0.5
+
+- Define the hyperparameters of the EA run:
+   - Number of generations (n_generations = 100): number of generations of Invasive Weed
+   - Invasive Weed population size (n_pop_EA_size = 120): number of solutions that are allowed to reproduce each Invasive Weed generation
+   - Minimum number of offspring (n_min_offspring = 3): minimum number of offspring produced (the solution with lowest fitness)
+   - Maximum number of offspring (n_max_offspring = 7): maximum number of offspring produced (the solution with highest fitness)
+
+- Initialize the Invasive Weed by using the runEA method of the RunnerEA class defined in the RunnerEA.java file inside the evolutionaryalgorithm_approximatebayesiancomputationultimate (GP4PG) source package with the following arguments:
+   - time_lapses (10000): time interval (in generations) between which migration matrices should be calculated by fastsimcoal2
+   - probability_of_removing_nodes_vs_adding_nodes (0.8): proportion of times that the Invasive Weed mutation process will add a new event on th node vs removing an event from the node
 
 *If needed the main class can be changed in NetBeans by rightclicking the project folder - Properties - Run - Browse to java file to use as main*
 
@@ -506,9 +563,18 @@ done
 *Describe run folder setup*
 
 ```
-for sh in $(ls scripts/demographic_inference/sbatch_run_model_LPLL_IM_SI/*.sh)
+for n in {0..9}
  do
-  echo $sh
-  sbatch $sh
+  echo $n
+  sbatch -t 7-00:00 scripts/demographic_inference/sbatch_run_model_LPLL_IM_SI/run_model_LPLL_IM_SI_${n}.sh
 done
+
+# 10 to 17 are run on genomics-b
+# 18 to 19 are run on genomics-a
+
+screen -S run_LPLL_IM_SI_19
+cd /home/ebazzicalupo/Lynxtrogression/working/demographic_inference/logs/model_LPLL_IM_SI
+script run_model_LPLL_IM_SI_19.log
+conda activate lynx_ea_abc
+bash /home/ebazzicalupo/Lynxtrogression/scripts/demographic_inference/sbatch_run_model_LPLL_IM_SI/run_model_LPLL_IM_SI_19.sh
 ```
