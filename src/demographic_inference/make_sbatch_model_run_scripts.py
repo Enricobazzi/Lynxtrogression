@@ -26,7 +26,9 @@ python make_sbatch_model_run_scripts.py 1 config/model_1.config.properties
 This will generate a bash script called run_model_1_run_1.sh
 
 The bash script can be run on the cluster with:
-sbatch run_model_1_run_1.sh
+sbatch -t 7-00:00 run_model_1_run_1.sh
+
+Note that the time limit has to be manually set when sbatch is called.
 """
 
 import sys
@@ -65,7 +67,6 @@ def main():
             #SBATCH --job-name={model_name}_run_{run_number}
             #SBATCH --output={logs_folder}/run_{model_name}_{run_number}.out
             #SBATCH --error={logs_folder}/run_{model_name}_{run_number}.log
-            #SBATCH --time=3-00:00:00
             #SBATCH --mem=20G
             #SBATCH --cpus-per-task=4
             
