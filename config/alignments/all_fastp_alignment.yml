@@ -1,0 +1,73 @@
+sample_dict:
+  c_lp_sm_0211: 
+    LP_211_EKDN230028739-1A_227CWYLT3_L1:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_211_EKDN230028739-1A_227CWYLT3_L1_1.fastp.fq.gz', 'LP_211_EKDN230028739-1A_227CWYLT3_L1_2.fastp.fq.gz']
+    LP_211_EKDN230028739-1A_227CWYLT3_L2:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_211_EKDN230028739-1A_227CWYLT3_L2_1.fastp.fq.gz', 'LP_211_EKDN230028739-1A_227CWYLT3_L2_2.fastp.fq.gz']
+    LP_211_EKDN230028739-1A_227CWYLT3_L3:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_211_EKDN230028739-1A_227CWYLT3_L3_1.fastp.fq.gz', 'LP_211_EKDN230028739-1A_227CWYLT3_L3_2.fastp.fq.gz']
+    LP_211_EKDN230028739-1A_227CWYLT3_L4:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_211_EKDN230028739-1A_227CWYLT3_L4_1.fastp.fq.gz', 'LP_211_EKDN230028739-1A_227CWYLT3_L4_2.fastp.fq.gz']
+  c_lp_sm_0220:
+    LP_220_EKDN230028698-1A_225TTNLT3_L4:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_220_EKDN230028698-1A_225TTNLT3_L4_1.fastp.fq.gz', 'LP_220_EKDN230028698-1A_225TTNLT3_L4_2.fastp.fq.gz']
+  c_lp_sm_0225:
+    LP_225_EKDN230028737-1A_227CWYLT3_L1:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_225_EKDN230028737-1A_227CWYLT3_L1_1.fastp.fq.gz', 'LP_225_EKDN230028737-1A_227CWYLT3_L1_2.fastp.fq.gz']
+    LP_225_EKDN230028737-1A_227CWYLT3_L2:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_225_EKDN230028737-1A_227CWYLT3_L2_1.fastp.fq.gz', 'LP_225_EKDN230028737-1A_227CWYLT3_L2_2.fastp.fq.gz']
+    LP_225_EKDN230028737-1A_227CWYLT3_L3:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_225_EKDN230028737-1A_227CWYLT3_L3_1.fastp.fq.gz', 'LP_225_EKDN230028737-1A_227CWYLT3_L3_2.fastp.fq.gz']
+    LP_225_EKDN230028737-1A_227CWYLT3_L4:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_225_EKDN230028737-1A_227CWYLT3_L4_1.fastp.fq.gz', 'LP_225_EKDN230028737-1A_227CWYLT3_L4_2.fastp.fq.gz']
+  c_lp_sm_0239:
+    LP_239_EKDN230028707-1A_225THHLT3_L2:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_239_EKDN230028707-1A_225THHLT3_L2_1.fastp.fq.gz', 'LP_239_EKDN230028707-1A_225THHLT3_L2_2.fastp.fq.gz']
+  c_lp_sm_0278:
+    LP_278_EKDN230028717-1A_225THHLT3_L5:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_278_EKDN230028717-1A_225THHLT3_L5_1.fastp.fq.gz', 'LP_278_EKDN230028717-1A_225THHLT3_L5_2.fastp.fq.gz']
+  c_lp_sm_0377:
+    LP_377_EKDN230028734-1A_227CWYLT3_L1:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_377_EKDN230028734-1A_227CWYLT3_L1_1.fastp.fq.gz', 'LP_377_EKDN230028734-1A_227CWYLT3_L1_2.fastp.fq.gz']
+    LP_377_EKDN230028734-1A_227CWYLT3_L2:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_377_EKDN230028734-1A_227CWYLT3_L2_1.fastp.fq.gz', 'LP_377_EKDN230028734-1A_227CWYLT3_L2_2.fastp.fq.gz']
+    LP_377_EKDN230028734-1A_227CWYLT3_L3:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_377_EKDN230028734-1A_227CWYLT3_L3_1.fastp.fq.gz', 'LP_377_EKDN230028734-1A_227CWYLT3_L3_2.fastp.fq.gz']
+    LP_377_EKDN230028734-1A_227CWYLT3_L4:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_377_EKDN230028734-1A_227CWYLT3_L4_1.fastp.fq.gz', 'LP_377_EKDN230028734-1A_227CWYLT3_L4_2.fastp.fq.gz']
+  c_lp_sm_0390:
+    LP_390_EKDN230028715-1A_225THHLT3_L4:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_390_EKDN230028715-1A_225THHLT3_L4_1.fastp.fq.gz', 'LP_390_EKDN230028715-1A_225THHLT3_L4_2.fastp.fq.gz']
+  c_lp_sm_0452:
+    LP_452_EKDN230028719-1A_225THHLT3_L5:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_452_EKDN230028719-1A_225THHLT3_L5_1.fastp.fq.gz', 'LP_452_EKDN230028719-1A_225THHLT3_L5_2.fastp.fq.gz']
+    LP_452_EKDN230028719-1A_225THHLT3_L6:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_452_EKDN230028719-1A_225THHLT3_L6_1.fastp.fq.gz', 'LP_452_EKDN230028719-1A_225THHLT3_L6_2.fastp.fq.gz']
+  c_lp_sm_0474:
+    LP_474_EKDN230028738-1A_227CWYLT3_L1:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_474_EKDN230028738-1A_227CWYLT3_L1_1.fastp.fq.gz', 'LP_474_EKDN230028738-1A_227CWYLT3_L1_2.fastp.fq.gz']
+    LP_474_EKDN230028738-1A_227CWYLT3_L2:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_474_EKDN230028738-1A_227CWYLT3_L2_1.fastp.fq.gz', 'LP_474_EKDN230028738-1A_227CWYLT3_L2_2.fastp.fq.gz']
+    LP_474_EKDN230028738-1A_227CWYLT3_L3:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_474_EKDN230028738-1A_227CWYLT3_L3_1.fastp.fq.gz', 'LP_474_EKDN230028738-1A_227CWYLT3_L3_2.fastp.fq.gz']
+    LP_474_EKDN230028738-1A_227CWYLT3_L4:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_474_EKDN230028738-1A_227CWYLT3_L4_1.fastp.fq.gz', 'LP_474_EKDN230028738-1A_227CWYLT3_L4_2.fastp.fq.gz']
+  c_lp_sm_0614:
+    LP_614_EKDN230028696-1A_225TTNLT3_L3:
+      ['/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/FASTQ_files/novogene_lp_sept2023/fastp_output', 'LP_614_EKDN230028696-1A_225TTNLT3_L3_1.fastp.fq.gz', 'LP_614_EKDN230028696-1A_225TTNLT3_L3_2.fastp.fq.gz']
+
+reference_fasta: "/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/reference_genomes/Lynx_canadensis_Ref/lc4.fa"
+
+output_folder: "/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/LyCaRef_bams"
+
+threads: 20
+
+alignment_name: "LyCa_ref"
+
+call_bwa: "bwa"
+
+call_samtools: "samtools"
+
+call_picard: "java -jar ${EBROOTPICARD}/picard.jar"
+
+call_gatk: "java -jar ${EBROOTGATK}/GenomeAnalysisTK.jar"
