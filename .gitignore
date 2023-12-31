@@ -21,6 +21,10 @@ actividad.ipynb
 shit.ipynb
 .ipynb_checkpoints
 
+__pycache__
+
+scripts/alignments
+
 scripts/demographic_inference/sbatch_run_model_LPLL_IM
 scripts/demographic_inference/sbatch_run_model_LPLL_SI
 scripts/demographic_inference/sbatch_run_model_LPLL_IM_SI
