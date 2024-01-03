@@ -87,6 +87,29 @@ for sh in $(ls scripts/alignments/*.sh)
 done
 ```
 
+#### Alignment quality control
+
+To check on the quality of alignments I run QualiMap.
+
+```
+# Sbatch QualiMap of all samples I want to check out
+bams=$(ls /mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/LyCaRef_bams/*er.bam | grep -E "ll|lp" | grep -E "ll_ca|lp_sm|ll_ya|ll_vl|ll_ki|ll_ur" | grep -vE "ca_0249|ca_0253")
+
+for bam in ${bams[@]}
+ do
+  echo "sbatch qualimap of $bam"
+  sbatch src/alignments/run_qualimap_bam_out.sh \
+  ${bam} data/qualimap
+done
+```
+
+Then I can summarize the results using multiQC.
+
+```
+cd data/qualimap
+multiqc .
+```
+
 ### Variant Calling using GATK
 
 Variant calling was performed on the ft3 CESGA server.
