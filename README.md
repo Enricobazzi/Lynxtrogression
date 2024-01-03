@@ -114,6 +114,37 @@ multiqc .
 
 Variant calling was performed on the ft3 CESGA server.
 
+```
+ref_dir=/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/reference_genomes/Lynx_canadensis_Ref
+bam_dir=/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/LyCaRef_bams
+gvcf_dir=/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/LyCaRef_gvcfs
+
+scaffolds=$(cat ${ref_dir}/autosomic_scaffolds_list.txt)
+ref=${ref_dir}/lc4.fa
+
+samples=(c_lp_sm_0220 c_lp_sm_0474 c_lp_sm_0614 c_ll_ki_0090 c_ll_ur_0202)
+
+for sample in ${samples[@]}
+ do
+  inbam=$(ls ${bam_dir}/*er.bam | grep ${sample})
+  
+  for chr in ${scaffolds[@]}
+   do
+    
+    bed=${ref_dir}/CHR_BEDs/${chr}_CHR_coordinates.bed
+    outgvcf=${gvcf_dir}/${sample}.${chr}.gvcf
+
+    echo "sbatch call gvcf of $sample $chr"
+    sbatch src/calling/call_gvcf_ref_bam_outgvcf_bed.sh \
+    $ref \
+    $inbam \
+    $outgvcf \
+    $bed
+    
+  done
+done
+```
+
 I made a list of the bams to be included in the calling:
 
 ```
