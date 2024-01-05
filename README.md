@@ -26,7 +26,7 @@ The [populations table](data/lp_ll_introgression_populations.txt) has informatio
 | vl     | eel        |
 | ca     | sel        |
 
-*Write samples table*
+A [table](data/samples_table.xlsx) with each sample's species, population, original study, sequencing technology, median read depth can be found in the data folder. There I also marked which samples were used in which analysis.
 
 ### Alignment to reference genomes
 
@@ -89,7 +89,7 @@ done
 
 #### Alignment quality control
 
-To check on the quality of alignments I run QualiMap.
+To check on the quality of alignments I run [QualiMap v2.2.1](http://qualimap.conesalab.org/) ([Okonechnikov et al. 2016](https://doi.org/10.1093/bioinformatics/btv566)) using the [run_qualimap_bam_out](src/alignments/run_qualimap_bam_out.sh) script.
 
 ```
 # Sbatch QualiMap of all samples I want to check out
@@ -103,7 +103,7 @@ for bam in ${bams[@]}
 done
 ```
 
-Then I can summarize the results using multiQC.
+Then I can summarize the results using [multiqc](https://multiqc.info/) ([Ewels et al. (2016)](https://academic.oup.com/bioinformatics/article/32/19/3047/2196507)).
 
 ```
 cd data/qualimap
@@ -122,7 +122,8 @@ gvcf_dir=/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/Ly
 scaffolds=$(cat ${ref_dir}/autosomic_scaffolds_list.txt)
 ref=${ref_dir}/lc4.fa
 
-samples=(c_lp_sm_0220 c_lp_sm_0474 c_lp_sm_0614 c_ll_ki_0090 c_ll_ur_0202)
+# samples=(c_lp_sm_0220 c_lp_sm_0474 c_lp_sm_0614 c_ll_ki_0090 c_ll_ur_0202)
+# samples=(c_ll_ya_0141 c_ll_ya_0146 c_ll_ca_0240 c_ll_ca_0243)
 
 for sample in ${samples[@]}
  do
@@ -132,7 +133,7 @@ for sample in ${samples[@]}
    do
     
     bed=${ref_dir}/CHR_BEDs/${chr}_CHR_coordinates.bed
-    outgvcf=${gvcf_dir}/${sample}.${chr}.gvcf
+    outgvcf=${gvcf_dir}/${sample}.${chr}.g.vcf
 
     echo "sbatch call gvcf of $sample $chr"
     sbatch src/calling/call_gvcf_ref_bam_outgvcf_bed.sh \
@@ -144,6 +145,53 @@ for sample in ${samples[@]}
   done
 done
 ```
+Combine individual sample files of each chromosome into a unified file for each chromosome.
+```
+ref_dir=/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/reference_genomes/Lynx_canadensis_Ref
+gvcf_dir=/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/LyCaRef_gvcfs
+
+scaffolds=$(cat ${ref_dir}/autosomic_scaffolds_list.txt)
+ref=${ref_dir}/lc4.fa
+
+for chr in ${scaffolds[@]}
+ do
+  echo "combining gvcfs of ${chr}"
+  
+  ls ${gvcf_dir}/*.${chr}.g.vcf > tmp_${chr}_gvcf.list
+  
+  sbatch src/calling/combine_gvcfs_ref_list_outgvcf.sh \
+    $ref \
+    tmp_${chr}_gvcf.list \
+    ${gvcf_dir}/demo_inference.${chr}.g.vcf
+
+done
+
+rm tmp_*
+```
+Genotype the gvcf of each chromosome
+```
+ref_dir=/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/reference_genomes/Lynx_canadensis_Ref
+gvcf_dir=/mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/LyCaRef_gvcfs
+
+scaffolds=$(cat ${ref_dir}/autosomic_scaffolds_list.txt)
+ref=${ref_dir}/lc4.fa
+
+for chr in ${scaffolds[@]}
+ do
+  
+  ingvcf=${gvcf_dir}/demo_inference.${chr}.g.vcf
+  outgvcf=${gvcf_dir}/demo_inference.${chr}.genotyped.vcf
+  
+  echo "genotype gvcf of ${chr}"
+  
+  sbatch src/calling/genotype_gvcf_ref_ingvcf_outgvcf.sh \
+    $ref \
+    $ingvcf \
+    $outgvcf
+
+done
+```
+
 
 I made a list of the bams to be included in the calling:
 
@@ -152,7 +200,9 @@ I made a list of the bams to be included in the calling:
 cd /mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/LyCaRef_bams
 
 # Create a bamlist of samples from populations we want to include in our analysis
-ls *er.bam | grep -E "ll|lp" | grep -E "ca|sm|ya|vl|ki|ur" | grep -vE "ca_0249|ca_0253" > lp_ll_introgression.bamlist
+ls *er.bam | grep -E "ll|lp" | grep -E "ca|sm|ya|vl|ki|ur" | 
+  grep -vE "ca_0249|ca_0253|sm_0138|sm_0140|sm_0185|sm_0186|sm_0221|sm_0298|sm_0359" \
+  > lp_ll_introgression.bamlist
 ```
 
 To generate a VCF file from these BAMs, we performed variant calling on each scaffold in parallel, while additionally dividing all of the bigger scaffolds (18 autosomic + X) into 80 chunks each. This way more jobs have to be sbatched, but we have no memory or time problems.
