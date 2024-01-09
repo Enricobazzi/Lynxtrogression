@@ -4,7 +4,7 @@ library(RColorBrewer)
 options(scipen=500)
 
 # input data folder
-input_folder <- "../../data/variant_fitlering/rd_beds/"
+input_folder <- "../../data/variant_filtering/rd_beds/"
 
 # input suffix
 suffix <- "_10kb_depth.bed"
@@ -13,8 +13,10 @@ suffix <- "_10kb_depth.bed"
 for (pop in c("lpa", "wel", "eel", "sel")){
 
  # list of chromosomes
- chrs <- system(paste0("ls ", input_folder, " | ", "grep ", pop, " | ", "sed 's/", pop, "_//g'", 
-               " | ", "sed 's/", suffix, "//g'", " | ", "grep -v Super_Scaffold_10 "), intern=T)
+ chrs <- system(paste0("ls ", input_folder, " | ", "grep ", pop, " | ",
+                       "sed 's/", pop, "_//g'", " | ",
+                       "sed 's/", suffix, "//g'", " | ",
+                       "grep -v Super_Scaffold_10"), intern=T)
  
  # prepare bed
  pop_rd_bed <- data.frame()
@@ -60,7 +62,7 @@ for (pop in c("lpa", "wel", "eel", "sel")){
    theme_classic()
  
  # save plot
- ggsave(filename = paste0("../../plots/variant_fitlering/plots/rd_filters/", pop, "_rd_limits.pdf"),
+ ggsave(filename = paste0("../../plots/variant_filtering/rd_filters/", pop, "_rd_limits.pdf"),
         plot = rd_plot, 
         width = 4,
         height = 4,
@@ -69,7 +71,7 @@ for (pop in c("lpa", "wel", "eel", "sel")){
  # save bed of windows to be filtered
  bad_pop_rd_bed <- pop_rd_bed %>% filter(mean_rd > maxdepth)
  write.table(x = bad_pop_rd_bed,
-             file = paste0("../../data/variant_fitlering/", pop, "_rd_filter.bed"),
+             file = paste0("../../data/variant_filtering/", pop, "_rd_filter.bed"),
              quote=FALSE,  col.names = F, row.names = FALSE, sep= "\t")
  
 
