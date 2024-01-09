@@ -96,18 +96,6 @@ ggplot(pca_df, aes(x = Dim.1, y = Dim.2, fill = fitness, shape = type)) +
   theme_bw()
 ```
 
-
-```{r}
-# plot run number 39 comparing columns 2 to 8 of type observed
-# versus simulated
-df %>% filter(run_number == 10) %>%
-  gather(key = "variable", value = "value", X0_1:X2_1) %>%
-  ggplot(aes(x = variable, y = value, fill = type)) +
-  geom_point(shape = 21, size = 3) +
-  theme_bw()
-
-```
-
 plot distribution of columns 2 to 8, from runs with fitness < 4
 
 ```{r}
@@ -121,11 +109,11 @@ df %>% filter(fitness < 4) %>%
   theme_bw()
 ```
 
-plot distribution of columns 2 to 8, from runs with fitness < 4, adding results from pre-phased set of observed data
+plot tests of three lynx pardinus individuals
 
 ```{r}
-prephase <- read.table(
-  "/Users/enrico/Documents/testing_ea/output.226.nomiss.txt", 
+lp220 <- read.table(
+  "/Users/enrico/Documents/Lynxtrogression/data/demographic_inference/testing_0220.txt", 
   sep = ",", 
   header = F,
   col.names = colnames(df),
@@ -134,8 +122,33 @@ prephase <- read.table(
     rep("character", 1)
     )
 )
+lp220$type <- "lp220"
 
-df_wpre <- rbind(df, prephase)
+lp474 <- read.table(
+  "/Users/enrico/Documents/Lynxtrogression/data/demographic_inference/testing_0474.txt", 
+  sep = ",", 
+  header = F,
+  col.names = colnames(df),
+  colClasses = c(
+    rep("numeric", 9),
+    rep("character", 1)
+    )
+)
+lp474$type <- "lp474"
+
+lp614 <- read.table(
+  "/Users/enrico/Documents/Lynxtrogression/data/demographic_inference/testing_0614.txt", 
+  sep = ",", 
+  header = F,
+  col.names = colnames(df),
+  colClasses = c(
+    rep("numeric", 9),
+    rep("character", 1)
+    )
+)
+lp614$type <- "lp614"
+
+df_wpre <- rbind(lp220, lp474, lp614)
 
 # plot distribution of columns 2 to 8, using runs with fitness < 4
 # plotting by run type
@@ -146,8 +159,34 @@ df_wpre %>% filter(fitness < 4) %>%
   facet_wrap(~variable, scales = "free") +
   theme_bw()
 
-prephase$X0_1 + prephase$X0_2
-prephase$X1_0 + prephase$X2_0
+df_wpre$summ <- df_wpre$X1_0 + df_wpre$X2_0
+df_wpre %>% filter(fitness < 4) %>%
+  gather(key = "variable", value = "value", summ) %>%
+  ggplot(aes(x = X1_0 + X2_0, fill = type)) +
+  geom_density(alpha = 0.5) +
+  facet_wrap(~variable, scales = "free") +
+  theme_bw()
+
+
+# test significance of difference between lp614, lp747 and lp220 for X1_0 and X2_0 separately and their sum
+# X1_0
+t.test(lp614$X1_0, lp220$X1_0)
+t.test(lp614$X1_0, lp474$X1_0)
+t.test(lp220$X1_0, lp474$X1_0)
+
+# X2_0
+t.test(lp614$X2_0, lp220$X2_0)
+t.test(lp614$X2_0, lp474$X2_0)
+t.test(lp220$X2_0, lp474$X2_0)
+
+# X1_0 + X2_0
+t.test(lp614$X1_0 + lp614$X2_0, lp220$X1_0 + lp220$X2_0)
+t.test(lp614$X1_0 + lp614$X2_0, lp474$X1_0 + lp474$X2_0)
+t.test(lp220$X1_0 + lp220$X2_0, lp474$X1_0 + lp474$X2_0)
+
+t.test(lp614$X1_0 + lp614$X2_0, lp614$X0_1 + lp614$X0_2)
+t.test(lp474$X1_0 + lp474$X2_0, lp474$X0_1 + lp474$X0_2)
+t.test(lp220$X1_0 + lp220$X2_0, lp220$X0_1 + lp220$X0_2)
 
 postphase <- df %>% filter(type == "observed")
 postphase$X0_1 + postphase$X0_2
