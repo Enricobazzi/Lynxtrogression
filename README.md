@@ -191,7 +191,29 @@ for chr in ${scaffolds[@]}
 
 done
 ```
+Concatenate the single chromosome VCFs into one
+```
+module load picard
 
+gvcf_dir=/GRUPOS/grupolince/LyCaRef_gvcfs
+vcf_dir=/GRUPOS/grupolince/LyCaRef_vcfs
+
+# Create a VCF file list
+ls ${gvcf_dir}/demo_inference.*.genotyped.vcf > data/calling/demo_inference.genotyped.vcf.list
+
+# Concatenate chromosome VCFs into whole genome VCF
+/opt/bcftools-1.6/bcftools concat \
+  -f data/calling/demo_inference.genotyped.vcf.list \
+  --output-type v \
+  --output ${vcf_dir}/demo_inference.LyCa_ref.vcf \
+  --threads 22
+
+# Sort with bcftools sort:
+/opt/bcftools-1.6/bcftools sort -O v \
+  -o ${vcf_dir}/demo_inference.LyCa_ref.sorted.vcf \
+  ${vcf_dir}/demo_inference.LyCa_ref.vcf
+
+```
 
 I made a list of the bams to be included in the calling:
 
@@ -268,6 +290,18 @@ The following variants were filtered from the VCF generated during the calling:
 4. and 5. Standard quality filters, as GATK standard practices
 
 This was performed in the genomics-a server running a customized script [lp_ll_introgression_vcf_filters_1-5.sh](scripts/variant_filtering/lp_ll_introgression_vcf_filters_1-5.sh) that uses a combination of bedtools, bcftools and gatk.
+
+New version
+```
+ref=/GRUPOS/grupolince/reference_genomes/lynx_canadensis/lc4.fa
+invcf=/GRUPOS/grupolince/LyCaRef_vcfs/demo_inference.LyCa_ref.sorted.vcf
+mask=/GRUPOS/grupolince/reference_genomes/lynx_canadensis/repetitive_regions/lc_rep_ALL_scaffold_coord.bed
+
+bash src/variant_filtering/filter_1to5_ref_invcf_mask.sh \
+  $ref \
+  $invcf \
+  $mask
+```
 
 An additional custom script [summary_table_filters_1-5.sh](scripts/variant_filtering/summary_table_filters_1-5.sh) was then run to extract a [table](data/variant_filtering/lp_ll_introgression_LyCa_ref.filters_1-5.log.csv) summarizing the filtering process, indicating how many variants are present at the start of each step (e_vars) and how many variants were filtered at each step.
 
@@ -427,7 +461,7 @@ Mean read depth in consecutive 10kbp windows along the genome was calculated usi
 pop_list=($(cat /mnt/lustre/hsm/nlsas/notape/home/csic/ebd/jgl/lynx_genome/lynx_data/LyCaRef_vcfs/lp_ll_introgression/lp_ll_introgression_populations.txt | cut -f2 | sort -u))
 for pop in ${pop_list[@]}
  do
-  sbatch -t 02-00:00 -n 1 -c 1 --mem=90GB pop_depth_10kwin.sh ${pop}
+  sbatch -t 02-00:00 -n 1 -c 1 --mem=1GB pop_depth_10kwin.sh ${pop}
 done
 ```
 
@@ -730,9 +764,9 @@ Following the instructions in the main class the program will:
 
 - Define the hyperparameters of the EA run:
    - Number of generations (n_generations = 100): number of generations of Invasive Weed
-   - Invasive Weed population size (n_pop_EA_size = 120): number of solutions that are allowed to reproduce each Invasive Weed generation
-   - Minimum number of offspring (n_min_offspring = 3): minimum number of offspring produced (the solution with lowest fitness)
-   - Maximum number of offspring (n_max_offspring = 7): maximum number of offspring produced (the solution with highest fitness)
+   - Invasive Weed population size (n_pop_EA_size = 100): number of solutions that are allowed to reproduce each Invasive Weed generation
+   - Minimum number of offspring (n_min_offspring = 2): minimum number of offspring produced (the solution with lowest fitness)
+   - Maximum number of offspring (n_max_offspring = 8): maximum number of offspring produced (the solution with highest fitness)
 
 - Initialize the Invasive Weed by using the runEA method of the RunnerEA class defined in the RunnerEA.java file inside the evolutionaryalgorithm_approximatebayesiancomputationultimate (GP4PG) source package with the following arguments:
    - time_lapses (10000): time interval (in generations) between which migration matrices should be calculated by fastsimcoal2
@@ -751,11 +785,6 @@ In order to create the scripts that will run the GP4PG model and in order to run
 *Describe make_sbatch script*
 
 ```
-for n in {0..50}
- do
-  python src/demographic_inference/make_sbatch_model_run_scripts.py $n config/demographic_inference/model_LPLL_SI.config.properties scripts/demographic_inference/sbatch_run_model_LPLL_SI
-  python src/demographic_inference/make_sbatch_model_run_scripts.py $n config/demographic_inference/model_LPLL_IM.config.properties scripts/demographic_inference/sbatch_run_model_LPLL_IM
-done
 
 for n in {0..50}
  do
@@ -765,6 +794,15 @@ done
 ```
 
 *Describe run folder setup*
+```
+# copy bed file
+cp data/demographic_inference/demo_inference.filter5.* \
+  working/demographic_inference/run_model_LPLL_IM_SI/
+
+# copy masked_regions
+cp data/demographic_inference/genomic_regions/masked_regions.txt \
+  working/demographic_inference/run_model_LPLL_IM_SI/
+```
 
 *run either on cesga with sbatch script*
 ```
@@ -820,14 +858,14 @@ done
 ```
 *then run on screens individually like this*
 ```
-# 10 to 17, 20 to 29, 33 to 38, 49 to are run on genomics-b
-# 18 to 19, 39 to 41, 50 are run on genomics-a
+#  on genomics-b
+#  on genomics-a
 
-screen -S run_LPLL_IM_SI_50
+screen -S run_LPLL_IM_SI_5
 cd /home/ebazzicalupo/Lynxtrogression/working/demographic_inference/logs/model_LPLL_IM_SI
-script run_model_LPLL_IM_SI_50.log
+script run_model_LPLL_IM_SI_5.log
 conda activate lynx_ea_abc
-bash /home/ebazzicalupo/Lynxtrogression/scripts/demographic_inference/sbatch_run_model_LPLL_IM_SI/run_model_LPLL_IM_SI_50.sh
+bash /home/ebazzicalupo/Lynxtrogression/scripts/demographic_inference/sbatch_run_model_LPLL_IM_SI/run_model_LPLL_IM_SI_5.sh
 
 ```
 I also try to check if length of masked_regions.txt has effect on fitness:
