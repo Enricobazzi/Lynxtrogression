@@ -5,13 +5,6 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r setup, include=FALSE, cache = FALSE}
-require("knitr")
-
-# set working directory
-opts_knit$set(root.dir = "/Users/enrico/Documents/Lynxtrogression")
-```
-
 In this MD we analyze the results from the EA runs which are saved in the file called:
 
 - data/demographic_inference/ea_log_sfs.csv
@@ -27,172 +20,274 @@ Prepare R environment:
 library(tidyverse)
 library(FactoMineR)
 library(reshape)
+library(factoextra)
 ```
 
 Load the data:
 
 ```{r}
-# read the data setting columns 2 to 8 as float and the 
-# rest as string
+# read the data from the csv file of the ea runs
 df <- read.table("data/demographic_inference/ea_log_sfs.csv", 
-                 sep = ",", 
-                 header = T, 
+                 sep = ",", header = T, 
                  colClasses = c(
-                   rep("numeric", 9),
-                   rep("character", 1)
+                   rep("numeric", 9), rep("character", 1)
                    )
                  )
 
 # remove rows with NAs
 df <- df %>% drop_na()
-
-# scale the values of columns 2 to 8 to be between 0 and 1 with
-# 0 being the minimum and 1 being the maximum across all columns
-# df[,2:8] <- apply(df[,2:8], 2, function(x) (x - min(x)) / (max(x) - min(x)))
 ```
 
-Create a PCA object using the columns you prefer:
+```{r}
+# for simulated type runs, plot the fitness values (y axis) against the run_number (x axis)
+# ordered from lowest to highest fitness
+simulated_fitness <- df %>% filter(type == "simulated") %>%
+  mutate(rank = rank(fitness, ties.method = "first")) %>%
+  arrange(rank) %>% head(30) %>%
+  ggplot(aes(x = rank, y = fitness)) +
+  geom_point() +
+  geom_line() +
+  labs(x = "rank", y = "fitness") +
+  ggtitle("simulated runs fitness") +
+  theme_bw()
+simulated_fitness
+```
+
+
+```{r}
+# rank simulated rows based on fitness value
+# with lowest fitness = rank 1
+# second lowest = rank 2
+# etc.
+# then retain the first 10
+
+df_sim <- df %>% filter(type == "simulated") %>%
+  mutate(rank = rank(fitness, ties.method = "first")) %>% 
+  arrange(rank) %>% head(10)
+
+# paste this to a df made of only observed rows
+df_obs <- df %>% filter(type == "observed") %>% 
+  mutate(rank = 0)
+
+# combine the two
+df_best <- rbind(df_sim, df_obs)
+
+# add 00 and 22 to table
+df_best$X0_0 = rep(0, nrow(df_best))
+df_best$X2_2 = rep(0, nrow(df_best))
+```
+
+```{r}
+# plot the the values of X1_0/X2_0 against the values of X0_1/X0_2
+# with shape of the point indicating the rank of the run (use shapes 20 to 25)
+# and its fill indicating the type of run (simulated or observed)
+
+ratio_hethom <- ggplot(df_best, aes(x = X1_0/X2_0, y = X0_1/X0_2, shape = type, fill=rank)) +
+  geom_point(size = 3) +
+  scale_shape_manual(values = c(21, 22)) +
+  scale_fill_gradient(low = "orange", high = "blue") +
+  labs(x = "iberian", y = "eurasian", size = 9) +
+  ggtitle("ratio of heterozygous to homozygous variants") +
+  theme_bw()
+ratio_hethom
+ggsave("plots/demographic_inference/explore_ea_run_sfs/ratio_hethom.pdf",
+       ratio_hethom, width = 15, height = 15, units = "cm")
+```
+
+```{r}
+```
+
+```{r}
+df_best %>%
+  gather(key = "variable", value = "value", X0_1:X2_1) %>%
+  ggplot(aes(x = variable, y = value , shape = type, fill = rank)) +
+  geom_point(position = position_dodge(width=1), size = 2) +
+  scale_shape_manual(values = c(21, 22)) +
+  scale_fill_gradient(low = "orange", high = "blue") +
+  theme_bw()
+```
+
+```{r}
+sfs_distributions <- df_best %>%
+  select(X0_0, X0_1, X0_2, X1_0, X1_1, X1_2, X2_0, X2_1, X2_2, type) %>%
+  gather(key = "variable", value = "value", X0_0:X2_2) %>%
+  ggplot(aes(x = value, fill = type)) +
+  geom_density(alpha = 0.5) +
+  facet_wrap(~variable, scales = "free") +
+  labs(x = "", y = "", size = 9) +
+  ggtitle("simulated vs observed SFS cells") +
+  theme_bw()
+sfs_distributions
+ggsave("plots/demographic_inference/explore_ea_run_sfs/sfs_distributions.pdf",
+       sfs_distributions, width = 20, height = 12, units = "cm")
+```
+
+
+```{r}
+homhet_ratio_dist <- df_best %>%
+  select(X0_0, X0_1, X0_2, X1_0, X1_1, X1_2, X2_0, X2_1, X2_2, type) %>%
+  mutate(lypa_ratio = X1_0/X2_0, lyly_ratio = X0_1/X0_2) %>%
+  gather(key = "variable", value = "value", c(lypa_ratio, lyly_ratio)) %>%
+  ggplot(aes(x = value, fill = type)) +
+  geom_density(alpha = 0.5) +
+  facet_wrap(~variable, scales = "free") +
+  labs(x = "", y = "", size = 9) +
+  ggtitle("ratio of heterozygous to homozygous derived alleles") +
+  theme_bw()
+homhet_ratio_dist
+ggsave("plots/demographic_inference/explore_ea_run_sfs/homhet_ratio_dist.pdf",
+       homhet_ratio_dist, width = 20, height = 12, units = "cm")
+```
+
 
 ```{r}
 # run pca for columns 2 to 8
-all_pca <- FactoMineR::PCA(df[,2:8], scale.unit = T, graph = F)
+all_pca <- FactoMineR::PCA(df_best[,c(2:8)], scale.unit = T, graph = F)
+
+# create a df from the pca object
 pca_df <- as.data.frame(all_pca$ind$coord)
 
-# run pca for columns 2, 3, 5, 6, 7, 8
-# all_pca <- FactoMineR::PCA(df[,c(2,3,5,6,7,8)], scale.unit = T, graph = F)
-# pca_df <- as.data.frame(pca$ind$coord)
-
 # add run type and fitness to the pca_df
-pca_df$type <- df$type
-pca_df$fitness <- df$fitness
-```
+pca_df$type <- df_best$type
+pca_df$fitness <- df_best$fitness
+pca_df$rank <- df_best$rank
 
-Final adjustments to the table:
-
-```{r}
-# change fitness to a categorical variable where:
-# - values between 0 and 4 are "low"
-# - values between 4 and 8 are "medium"
-# - values above 8 are"high"
-pca_df$fitness <- ifelse(pca_df$fitness < 4, "low", 
-                         ifelse(pca_df$fitness < 8, "medium", "high"))
-```
-
-Plot the PCA:
-
-```{r}
-# plot the pca:
-# - scaling the points color by fitness (red = low, orange = medium, blue = high)
-# - having a different shape for each run type
-# - adding a legend at the bottom
-# - adding amount of variance explained to the axis labels
-ggplot(pca_df, aes(x = Dim.1, y = Dim.2, fill = fitness, shape = type)) +
+# pc1 pc2
+all_pca_pc1pc2 <- ggplot(pca_df,
+                         aes(x = Dim.1, y = Dim.2, fill = rank, shape = type)) +
   geom_point(size = 3) +
-  scale_fill_manual(values = c("red", "orange", "blue")) +
-  scale_shape_manual(values = c(22, 21)) +
+  scale_fill_gradient(low = "orange", high = "blue", ) +
+  scale_shape_manual(values = c(21, 22)) +
   theme(legend.position = "right") +
   labs(x = paste0("Dim.1 (", round(all_pca$eig[1,2], 2), "%)"), 
        y = paste0("Dim.2 (", round(all_pca$eig[2,2], 2), "%)")) +
   theme_bw()
+all_pca_pc1pc2
+ggsave("plots/demographic_inference/explore_ea_run_sfs/all_pca_pc1pc2.pdf",
+       all_pca_pc1pc2, width = 15, height = 15, units = "cm")
+
+# pc2 pc3
+all_pca_pc2pc3 <- ggplot(pca_df,
+                         aes(x = Dim.2, y = Dim.3, fill = rank, shape = type)) +
+  geom_point(size = 3) +
+  scale_fill_gradient(low = "orange", high = "blue", ) +
+  scale_shape_manual(values = c(21, 22)) +
+  theme(legend.position = "right") +
+  labs(x = paste0("Dim.2 (", round(all_pca$eig[2,2], 2), "%)"), 
+       y = paste0("Dim.3 (", round(all_pca$eig[3,2], 2), "%)")) +
+  theme_bw()
+all_pca_pc2pc3
+ggsave("plots/demographic_inference/explore_ea_run_sfs/all_pca_pc2pc3.pdf",
+       all_pca_pc2pc3, width = 15, height = 15, units = "cm")
+
+# pc1 pc3
+all_pca_pc1pc3 <- ggplot(pca_df,
+                         aes(x = Dim.1, y = Dim.3, fill = rank, shape = type)) +
+  geom_point(size = 3) +
+  scale_fill_gradient(low = "orange", high = "blue", ) +
+  scale_shape_manual(values = c(21, 22)) +
+  theme(legend.position = "right") +
+  labs(x = paste0("Dim.1 (", round(all_pca$eig[1,2], 2), "%)"), 
+       y = paste0("Dim.3 (", round(all_pca$eig[3,2], 2), "%)")) +
+  theme_bw()
+all_pca_pc1pc3
+ggsave("plots/demographic_inference/explore_ea_run_sfs/all_pca_pc1pc3.pdf",
+       all_pca_pc1pc3, width = 15, height = 15, units = "cm")
+
+# Contributions of variables to PC1
+pdf("plots/demographic_inference/explore_ea_run_sfs/all_pca_contrib_pc1.pdf",
+    width = 6, height = 6)
+fviz_contrib(all_pca, choice = "var", axes = 1, top = 21)
+dev.off()
+# Contributions of variables to PC2
+pdf("plots/demographic_inference/explore_ea_run_sfs/all_pca_contrib_pc2.pdf",
+    width = 6, height = 6)
+fviz_contrib(all_pca, choice = "var", axes = 2, top = 21)
+dev.off()
+# Contributions of variables to PC3
+pdf("plots/demographic_inference/explore_ea_run_sfs/all_pca_contrib_pc3.pdf",
+    width = 6, height = 6)
+fviz_contrib(all_pca, choice = "var", axes = 3, top = 21)
+dev.off()
 ```
 
-plot distribution of columns 2 to 8, from runs with fitness < 4
-
 ```{r}
-# plot distribution of columns 2 to 8, using runs with fitness < 4
-# plotting by run type
-df %>% filter(fitness < 4) %>%
-  gather(key = "variable", value = "value", X0_1:X2_1) %>%
-  ggplot(aes(x = value, fill = type)) +
-  geom_density(alpha = 0.5) +
-  facet_wrap(~variable, scales = "free") +
+# run pca for columns 2,3,4,7
+all_pca <- FactoMineR::PCA(df_best[,c(2,3,4,7)], scale.unit = T, graph = F)
+
+# create a df from the pca object
+pca_df <- as.data.frame(all_pca$ind$coord)
+
+# add run type and fitness to the pca_df
+pca_df$type <- df_best$type
+pca_df$fitness <- df_best$fitness
+pca_df$rank <- df_best$rank
+
+# pc1 pc2
+all_pca_pc1pc2 <- ggplot(pca_df,
+                         aes(x = Dim.1, y = Dim.2, fill = rank, shape = type)) +
+  geom_point(size = 3) +
+  scale_fill_gradient(low = "orange", high = "blue", ) +
+  scale_shape_manual(values = c(21, 22)) +
+  theme(legend.position = "right") +
+  labs(x = paste0("Dim.1 (", round(all_pca$eig[1,2], 2), "%)"), 
+       y = paste0("Dim.2 (", round(all_pca$eig[2,2], 2), "%)")) +
   theme_bw()
+all_pca_pc1pc2
+ggsave("plots/demographic_inference/explore_ea_run_sfs/four_pca_pc1pc2.pdf",
+       all_pca_pc1pc2, width = 15, height = 15, units = "cm")
+
+# pc2 pc3
+all_pca_pc2pc3 <- ggplot(pca_df,
+                         aes(x = Dim.2, y = Dim.3, fill = rank, shape = type)) +
+  geom_point(size = 3) +
+  scale_fill_gradient(low = "orange", high = "blue", ) +
+  scale_shape_manual(values = c(21, 22)) +
+  theme(legend.position = "right") +
+  labs(x = paste0("Dim.2 (", round(all_pca$eig[2,2], 2), "%)"), 
+       y = paste0("Dim.3 (", round(all_pca$eig[3,2], 2), "%)")) +
+  theme_bw()
+all_pca_pc2pc3
+ggsave("plots/demographic_inference/explore_ea_run_sfs/four_pca_pc2pc3.pdf",
+       all_pca_pc2pc3, width = 15, height = 15, units = "cm")
+
+# pc1 pc3
+all_pca_pc1pc3 <- ggplot(pca_df,
+                         aes(x = Dim.1, y = Dim.3, fill = rank, shape = type)) +
+  geom_point(size = 3) +
+  scale_fill_gradient(low = "orange", high = "blue", ) +
+  scale_shape_manual(values = c(21, 22)) +
+  theme(legend.position = "right") +
+  labs(x = paste0("Dim.1 (", round(all_pca$eig[1,2], 2), "%)"), 
+       y = paste0("Dim.3 (", round(all_pca$eig[3,2], 2), "%)")) +
+  theme_bw()
+all_pca_pc1pc3
+ggsave("plots/demographic_inference/explore_ea_run_sfs/four_pca_pc1pc3.pdf",
+       all_pca_pc1pc3, width = 15, height = 15, units = "cm")
+
+# Contributions of variables to PC1
+pdf("plots/demographic_inference/explore_ea_run_sfs/four_pca_contrib_pc1.pdf",
+    width = 6, height = 6)
+fviz_contrib(all_pca, choice = "var", axes = 1, top = 21)
+dev.off()
+# Contributions of variables to PC2
+pdf("plots/demographic_inference/explore_ea_run_sfs/four_pca_contrib_pc2.pdf",
+    width = 6, height = 6)
+fviz_contrib(all_pca, choice = "var", axes = 2, top = 21)
+dev.off()
+# Contributions of variables to PC3
+pdf("plots/demographic_inference/explore_ea_run_sfs/four_pca_contrib_pc3.pdf",
+    width = 6, height = 6)
+fviz_contrib(all_pca, choice = "var", axes = 3, top = 21)
+dev.off()
+
 ```
 
-plot tests of three lynx pardinus individuals
+We want the top 10 finally, which are the following:
 
 ```{r}
-lp220 <- read.table(
-  "/Users/enrico/Documents/Lynxtrogression/data/demographic_inference/testing_0220.txt", 
-  sep = ",", 
-  header = F,
-  col.names = colnames(df),
-  colClasses = c(
-    rep("numeric", 9),
-    rep("character", 1)
-    )
-)
-lp220$type <- "lp220"
-
-lp474 <- read.table(
-  "/Users/enrico/Documents/Lynxtrogression/data/demographic_inference/testing_0474.txt", 
-  sep = ",", 
-  header = F,
-  col.names = colnames(df),
-  colClasses = c(
-    rep("numeric", 9),
-    rep("character", 1)
-    )
-)
-lp474$type <- "lp474"
-
-lp614 <- read.table(
-  "/Users/enrico/Documents/Lynxtrogression/data/demographic_inference/testing_0614.txt", 
-  sep = ",", 
-  header = F,
-  col.names = colnames(df),
-  colClasses = c(
-    rep("numeric", 9),
-    rep("character", 1)
-    )
-)
-lp614$type <- "lp614"
-
-df_wpre <- rbind(lp220, lp474, lp614)
-
-# plot distribution of columns 2 to 8, using runs with fitness < 4
-# plotting by run type
-df_wpre %>% filter(fitness < 4) %>%
-  gather(key = "variable", value = "value", X0_1:X2_1) %>%
-  ggplot(aes(x = value, fill = type)) +
-  geom_density(alpha = 0.5) +
-  facet_wrap(~variable, scales = "free") +
-  theme_bw()
-
-df_wpre$summ <- df_wpre$X1_0 + df_wpre$X2_0
-df_wpre %>% filter(fitness < 4) %>%
-  gather(key = "variable", value = "value", summ) %>%
-  ggplot(aes(x = X1_0 + X2_0, fill = type)) +
-  geom_density(alpha = 0.5) +
-  facet_wrap(~variable, scales = "free") +
-  theme_bw()
-
-
-# test significance of difference between lp614, lp747 and lp220 for X1_0 and X2_0 separately and their sum
-# X1_0
-t.test(lp614$X1_0, lp220$X1_0)
-t.test(lp614$X1_0, lp474$X1_0)
-t.test(lp220$X1_0, lp474$X1_0)
-
-# X2_0
-t.test(lp614$X2_0, lp220$X2_0)
-t.test(lp614$X2_0, lp474$X2_0)
-t.test(lp220$X2_0, lp474$X2_0)
-
-# X1_0 + X2_0
-t.test(lp614$X1_0 + lp614$X2_0, lp220$X1_0 + lp220$X2_0)
-t.test(lp614$X1_0 + lp614$X2_0, lp474$X1_0 + lp474$X2_0)
-t.test(lp220$X1_0 + lp220$X2_0, lp474$X1_0 + lp474$X2_0)
-
-t.test(lp614$X1_0 + lp614$X2_0, lp614$X0_1 + lp614$X0_2)
-t.test(lp474$X1_0 + lp474$X2_0, lp474$X0_1 + lp474$X0_2)
-t.test(lp220$X1_0 + lp220$X2_0, lp220$X0_1 + lp220$X0_2)
-
-postphase <- df %>% filter(type == "observed")
-postphase$X0_1 + postphase$X0_2
-postphase$X1_0 + postphase$X2_0
-
-simulated <- df %>% filter(type == "simulated")
-simulated$X0_1 + simulated$X0_2
-simulated$X1_0 + simulated$X2_0
+# print the run_number of the top 10 simulated runs
+df_best %>% filter(type == "simulated") %>%
+  select(run_number, fitness) %>%
+  arrange(fitness)
 ```
